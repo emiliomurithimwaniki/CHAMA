@@ -80,7 +80,23 @@ def list_members(chama_id: str, db: Session = Depends(get_db), user=Depends(get_
     if not actor or actor.join_status != "approved":
         raise HTTPException(status_code=403, detail="Not a member")
     rows = db.query(Membership).filter(Membership.chama_id == chama_id).all()
-    return [MembershipOut(user_id=m.user_id, role=m.role, join_status=m.join_status) for m in rows]
+    user_ids = [m.user_id for m in rows]
+    users = db.query(User).filter(User.id.in_(user_ids)).all() if user_ids else []
+    user_map = {u.id: u for u in users}
+
+    out = []
+    for m in rows:
+        u = user_map.get(m.user_id)
+        out.append(
+            MembershipOut(
+                user_id=m.user_id,
+                full_name=getattr(u, "full_name", None),
+                phone_number=getattr(u, "phone_number", None),
+                role=m.role,
+                join_status=m.join_status,
+            )
+        )
+    return out
 
 
 @router.post("/{chama_id}/members", response_model=MembershipOut)
@@ -101,7 +117,13 @@ def add_member(chama_id: str, payload: AddMemberIn, db: Session = Depends(get_db
     m = Membership(chama_id=chama_id, user_id=target.id, role=payload.role, join_status="approved")
     db.add(m)
     db.commit()
-    return MembershipOut(user_id=m.user_id, role=m.role, join_status=m.join_status)
+    return MembershipOut(
+        user_id=m.user_id,
+        full_name=target.full_name,
+        phone_number=target.phone_number,
+        role=m.role,
+        join_status=m.join_status,
+    )
 
 
 @router.delete("/{chama_id}/members/{user_id}")

@@ -6,6 +6,9 @@
     "orientation": "portrait",
     "platforms": ["android"],
     "sdkVersion": "52.0.0",
+    "extra": {
+      "apiBaseUrl": "https://chama-u16k.onrender.com"
+    },
     "android": {
       "package": "com.chama.app"
     }

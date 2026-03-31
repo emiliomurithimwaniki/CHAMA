@@ -2,9 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { FlatList, SafeAreaView, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { Appbar, IconButton, Text, TextInput } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
 
 import { listChannels } from '../api/chamas';
 import { apiRequest } from '../api/client';
+import GradientHeader from '../components/GradientHeader';
 import { useAuth } from '../state/auth';
 
 export default function ChatScreen({ route }) {
@@ -15,6 +17,15 @@ export default function ChatScreen({ route }) {
   const [text, setText] = useState('');
   const wsRef = useRef(null);
   const listRef = useRef(null);
+
+  const myUserId = (() => {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload?.sub || null;
+    } catch (e) {
+      return null;
+    }
+  })();
 
   const loadHistory = async (cid) => {
     const rows = await apiRequest({
@@ -86,7 +97,13 @@ export default function ChatScreen({ route }) {
         <Appbar.Content title="Group Chat" subtitle={chama?.name} />
       </Appbar.Header>
 
-      <View style={{ flex: 1, padding: 12 }}>
+      <GradientHeader height={120}>
+        <Text style={{ color: 'rgba(255,255,255,0.85)', fontWeight: '800' }}>Chat</Text>
+        <Text style={{ color: 'white', fontWeight: '900', fontSize: 22, marginTop: 4 }}>{chama?.name}</Text>
+        <Text style={{ color: 'rgba(255,255,255,0.8)', marginTop: 6 }}>Messages are updated live.</Text>
+      </GradientHeader>
+
+      <View style={{ flex: 1, padding: 12, marginTop: 12 }}>
         <FlatList
           ref={listRef}
           data={messages}
@@ -95,14 +112,17 @@ export default function ChatScreen({ route }) {
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
           renderItem={({ item, index }) => (
             <View style={{ marginBottom: 8 }}>
+              {(() => {
+                const isMine = myUserId && String(item.sender_user_id) === String(myUserId);
+                return (
               <View
                 style={{
-                  alignSelf: 'flex-start',
+                  alignSelf: isMine ? 'flex-end' : 'flex-start',
                   maxWidth: '90%',
                   paddingVertical: 8,
                   paddingHorizontal: 10,
                   borderRadius: 14,
-                  backgroundColor: 'rgba(37,99,235,0.08)',
+                  backgroundColor: isMine ? 'rgba(37,99,235,0.18)' : 'rgba(15,23,42,0.06)',
                 }}
               >
                 <Text variant="labelSmall" style={{ opacity: 0.6 }}>
@@ -110,11 +130,25 @@ export default function ChatScreen({ route }) {
                 </Text>
                 <Text variant="bodyLarge">{item.body}</Text>
               </View>
+                );
+              })()}
             </View>
           )}
         />
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            marginTop: 8,
+            padding: 8,
+            borderRadius: 14,
+            backgroundColor: '#ffffff',
+            borderWidth: 1,
+            borderColor: 'rgba(15,23,42,0.06)',
+          }}
+        >
           <TextInput
             mode="outlined"
             value={text}
@@ -122,7 +156,7 @@ export default function ChatScreen({ route }) {
             placeholder="Message"
             style={{ flex: 1 }}
           />
-          <IconButton icon="send" onPress={send} disabled={!text.trim()} />
+          <IconButton icon={() => <Ionicons name="send" size={18} />} onPress={send} disabled={!text.trim()} />
         </View>
       </View>
     </SafeAreaView>

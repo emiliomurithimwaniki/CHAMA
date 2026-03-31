@@ -56,7 +56,7 @@ export default function ProfileScreen({ navigation }) {
           </Text>
         </GradientHeader>
 
-        <View style={{ padding: 14, marginTop: -34, gap: 12 }}>
+        <View style={{ padding: 14, marginTop: 12, gap: 12 }}>
           <Card style={{ borderRadius: 12 }}>
             <Card.Content>
               <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>

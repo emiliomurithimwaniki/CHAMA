@@ -40,6 +40,8 @@ class ChamaUpdateIn(BaseModel):
 
 class MembershipOut(BaseModel):
     user_id: str
+    full_name: str | None = None
+    phone_number: str | None = None
     role: str
     join_status: str
 
@@ -62,10 +64,16 @@ class ContributionOut(BaseModel):
     id: str
     chama_id: str
     user_id: str
+    user_full_name: str | None = None
     amount: str
     contribution_date: date
     period_key: str | None
+    payment_method: str | None = None
+    payment_reference: str | None = None
+    recorded_by_user_id: str | None = None
+    recorded_by_full_name: str | None = None
     status: str
+    created_at: datetime | None = None
 
 
 class LoanCreateIn(BaseModel):

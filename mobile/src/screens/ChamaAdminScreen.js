@@ -12,6 +12,13 @@ import { useChama } from '../state/chama';
 const ADMIN_ROLES = new Set(['chairperson', 'treasurer', 'secretary']);
 const VALID_ROLES = ['member', 'chairperson', 'treasurer', 'secretary'];
 
+const ROLE_LABELS = {
+  member: 'Member',
+  chairperson: 'Chairperson',
+  treasurer: 'Treasurer',
+  secretary: 'Secretary',
+};
+
 function RolePill({ role }) {
   const isAdmin = ADMIN_ROLES.has(String(role || '').toLowerCase());
   return (
@@ -158,7 +165,7 @@ export default function ChamaAdminScreen({ navigation, route }) {
           </View>
         </GradientHeader>
 
-        <View style={{ padding: 14, marginTop: -34, gap: 12 }}>
+        <View style={{ padding: 14, marginTop: 12, gap: 12 }}>
           {!chama ? (
             <Card style={{ borderRadius: 12 }}>
               <Card.Content>
@@ -205,7 +212,7 @@ export default function ChamaAdminScreen({ navigation, route }) {
                           style={{ flex: 1 }}
                           accessibilityLabel={`Set role ${r}`}
                         >
-                          {r}
+                          {ROLE_LABELS[r] || r}
                         </Button>
                       ))}
                     </View>
@@ -231,8 +238,10 @@ export default function ChamaAdminScreen({ navigation, route }) {
                       <View key={m.user_id} style={{ paddingVertical: 10 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                           <View style={{ flex: 1 }}>
-                            <Text style={{ fontWeight: '900' }}>{m.user_id}</Text>
-                            <Text style={{ opacity: 0.65, marginTop: 2 }}>{m.join_status}</Text>
+                            <Text style={{ fontWeight: '900' }}>{m.full_name || m.phone_number || m.user_id}</Text>
+                            <Text style={{ opacity: 0.65, marginTop: 2 }}>
+                              {m.full_name ? (m.phone_number ? m.phone_number : m.user_id) : m.join_status}
+                            </Text>
                           </View>
                           <RolePill role={m.role} />
                         </View>

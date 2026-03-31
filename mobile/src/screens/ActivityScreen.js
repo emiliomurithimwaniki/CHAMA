@@ -117,7 +117,7 @@ export default function ActivityScreen({ navigation }) {
           </View>
         </GradientHeader>
 
-        <View style={{ padding: 14, marginTop: -34, gap: 12 }}>
+        <View style={{ padding: 14, marginTop: 12, gap: 12 }}>
           {!selectedChama ? (
             <ActivityCard title="No chama selected" subtitle="Select a chama to see activity." meta={null} />
           ) : events.length === 0 && !busy ? (
