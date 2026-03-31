@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.deps import get_current_user, get_db
 from app.models.chat import ChatChannel, ChatMessage
 from app.models.membership import Membership
-from app.schemas import ChatMessageOut
+from app.schemas import ChatMessageOut, ChatSendMessageIn
 
 router = APIRouter(prefix="/chamas/{chama_id}/chat", tags=["chat"])
 
@@ -53,3 +53,45 @@ def list_messages(
         )
         for m in rows
     ]
+
+
+@router.post("/channels/{channel_id}/messages", response_model=ChatMessageOut)
+def send_message(
+    chama_id: str,
+    channel_id: str,
+    payload: ChatSendMessageIn,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    _membership(db, chama_id, user.id)
+
+    channel = db.query(ChatChannel).filter(ChatChannel.id == channel_id, ChatChannel.chama_id == chama_id).first()
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+
+    body = (payload.body or "").strip()
+    if not body:
+        raise HTTPException(status_code=400, detail="Message body required")
+
+    m = ChatMessage(
+        chama_id=chama_id,
+        channel_id=channel_id,
+        sender_user_id=user.id,
+        body=body,
+        message_type=payload.message_type or "text",
+        attachment_url=payload.attachment_url,
+    )
+    db.add(m)
+    db.commit()
+    db.refresh(m)
+
+    return ChatMessageOut(
+        id=m.id,
+        chama_id=m.chama_id,
+        channel_id=m.channel_id,
+        sender_user_id=m.sender_user_id,
+        body=m.body,
+        message_type=m.message_type,
+        attachment_url=m.attachment_url,
+        created_at=m.created_at,
+    )

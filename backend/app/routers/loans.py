@@ -5,6 +5,7 @@ from app.deps import get_current_user, get_db
 from app.models.loan import Loan
 from app.models.loan_approval import LoanApproval
 from app.models.membership import Membership
+from app.models.user import User
 from app.schemas import LoanApprovalIn, LoanCreateIn, LoanOut
 
 router = APIRouter(prefix="/chamas/{chama_id}/loans", tags=["loans"])
@@ -44,15 +45,21 @@ def apply_for_loan(
     db.commit()
     db.refresh(loan)
 
+    borrower = db.get(User, loan.borrower_user_id)
+
     return LoanOut(
         id=loan.id,
         chama_id=loan.chama_id,
         borrower_user_id=loan.borrower_user_id,
+        borrower_full_name=getattr(borrower, "full_name", None),
         principal_amount=loan.principal_amount,
         interest_type=loan.interest_type,
         interest_rate=loan.interest_rate,
         term_months=loan.term_months,
         status=loan.status,
+        total_payable=loan.total_payable,
+        created_at=loan.created_at,
+        updated_at=loan.updated_at,
     )
 
 
@@ -65,16 +72,25 @@ def list_loans(chama_id: str, db: Session = Depends(get_db), user=Depends(get_cu
         q = q.filter(Loan.borrower_user_id == user.id)
 
     loans = q.order_by(Loan.created_at.desc()).limit(200).all()
+
+    user_ids = {l.borrower_user_id for l in loans if l.borrower_user_id}
+    users = db.query(User).filter(User.id.in_(list(user_ids))).all() if user_ids else []
+    user_map = {u.id: u for u in users}
+
     return [
         LoanOut(
             id=l.id,
             chama_id=l.chama_id,
             borrower_user_id=l.borrower_user_id,
+            borrower_full_name=getattr(user_map.get(l.borrower_user_id), "full_name", None),
             principal_amount=l.principal_amount,
             interest_type=l.interest_type,
             interest_rate=l.interest_rate,
             term_months=l.term_months,
             status=l.status,
+            total_payable=l.total_payable,
+            created_at=l.created_at,
+            updated_at=l.updated_at,
         )
         for l in loans
     ]

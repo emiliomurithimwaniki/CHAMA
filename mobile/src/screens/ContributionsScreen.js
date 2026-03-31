@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, SafeAreaView, View } from 'react-native';
+import { FlatList, Modal, Pressable, SafeAreaView, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { Appbar, Button, Card, Text, TextInput } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +17,7 @@ export default function ContributionsScreen({ navigation, route }) {
   const [showHistory, setShowHistory] = useState(true);
   const [showSearch, setShowSearch] = useState(false);
   const [query, setQuery] = useState('');
+  const [activeTx, setActiveTx] = useState(null);
 
   const fmtMoney = (n) => {
     const x = Number(n);
@@ -30,6 +31,17 @@ export default function ContributionsScreen({ navigation, route }) {
     const hay = `${i?.amount ?? ''} ${i?.contribution_date ?? ''} ${i?.status ?? ''}`.toLowerCase();
     return hay.includes(q);
   });
+
+  const formatWhen = (value) => {
+    if (!value) return '—';
+    try {
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return String(value);
+      return d.toLocaleString();
+    } catch (e) {
+      return String(value);
+    }
+  };
 
   const load = async () => {
     try {
@@ -149,7 +161,11 @@ export default function ContributionsScreen({ navigation, route }) {
             contentContainerStyle={{ paddingBottom: 24 }}
             renderItem={({ item, index }) => (
               <View style={{ marginTop: 10 }}>
-                <Card style={{ borderRadius: 16, backgroundColor: '#ffffff', borderWidth: 1, borderColor: 'rgba(15,23,42,0.06)' }}>
+                <Card
+                  style={{ borderRadius: 16, backgroundColor: '#ffffff', borderWidth: 1, borderColor: 'rgba(15,23,42,0.06)' }}
+                  onPress={() => setActiveTx(item)}
+                  accessibilityLabel={`Transaction ${item.id}`}
+                >
                   <Card.Content style={{ gap: 6 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                       <Text variant="titleMedium" style={{ fontWeight: '900' }}>
@@ -167,6 +183,83 @@ export default function ContributionsScreen({ navigation, route }) {
             )}
           />
         ) : null}
+
+        <Modal
+          visible={!!activeTx}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setActiveTx(null)}
+        >
+          <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', padding: 16, justifyContent: 'center' }} onPress={() => setActiveTx(null)}>
+            <Pressable onPress={() => {}} style={{ width: '100%' }}>
+              <Card style={{ borderRadius: 18, backgroundColor: '#ffffff' }}>
+                <Card.Content style={{ gap: 12 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                    <Text variant="titleMedium" style={{ fontWeight: '900' }}>
+                      Transaction details
+                    </Text>
+                    <Ionicons name="close" size={20} color="rgba(15,23,42,0.55)" onPress={() => setActiveTx(null)} />
+                  </View>
+
+                  <View style={{ gap: 6 }}>
+                    <Text style={{ opacity: 0.65 }}>Amount</Text>
+                    <Text variant="titleLarge" style={{ fontWeight: '900' }}>
+                      {activeTx ? fmtMoney(activeTx.amount) : '—'}
+                    </Text>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <View style={{ flex: 1, gap: 4 }}>
+                      <Text style={{ opacity: 0.65 }}>Status</Text>
+                      <Text style={{ fontWeight: '800' }}>{activeTx ? String(activeTx.status || '—').toUpperCase() : '—'}</Text>
+                    </View>
+                    <View style={{ flex: 1, gap: 4 }}>
+                      <Text style={{ opacity: 0.65 }}>Contribution date</Text>
+                      <Text style={{ fontWeight: '800' }}>{activeTx ? String(activeTx.contribution_date || '—') : '—'}</Text>
+                    </View>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <View style={{ flex: 1, gap: 4 }}>
+                      <Text style={{ opacity: 0.65 }}>Initiated by</Text>
+                      <Text style={{ fontWeight: '800' }}>{activeTx ? activeTx.user_full_name || activeTx.user_id || '—' : '—'}</Text>
+                    </View>
+                    <View style={{ flex: 1, gap: 4 }}>
+                      <Text style={{ opacity: 0.65 }}>Recorded by</Text>
+                      <Text style={{ fontWeight: '800' }}>{activeTx ? activeTx.recorded_by_full_name || activeTx.recorded_by_user_id || '—' : '—'}</Text>
+                    </View>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <View style={{ flex: 1, gap: 4 }}>
+                      <Text style={{ opacity: 0.65 }}>Payment method</Text>
+                      <Text style={{ fontWeight: '800' }}>{activeTx ? activeTx.payment_method || '—' : '—'}</Text>
+                    </View>
+                    <View style={{ flex: 1, gap: 4 }}>
+                      <Text style={{ opacity: 0.65 }}>Reference</Text>
+                      <Text style={{ fontWeight: '800' }}>{activeTx ? activeTx.payment_reference || '—' : '—'}</Text>
+                    </View>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <View style={{ flex: 1, gap: 4 }}>
+                      <Text style={{ opacity: 0.65 }}>Created at</Text>
+                      <Text style={{ fontWeight: '800' }}>{activeTx ? formatWhen(activeTx.created_at) : '—'}</Text>
+                    </View>
+                    <View style={{ flex: 1, gap: 4 }}>
+                      <Text style={{ opacity: 0.65 }}>Period</Text>
+                      <Text style={{ fontWeight: '800' }}>{activeTx ? activeTx.period_key || '—' : '—'}</Text>
+                    </View>
+                  </View>
+
+                  <Button mode="contained" onPress={() => setActiveTx(null)} style={{ borderRadius: 12 }} contentStyle={{ paddingVertical: 6 }}>
+                    Done
+                  </Button>
+                </Card.Content>
+              </Card>
+            </Pressable>
+          </Pressable>
+        </Modal>
       </View>
     </SafeAreaView>
   );

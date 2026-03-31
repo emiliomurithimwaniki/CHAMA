@@ -87,11 +87,15 @@ class LoanOut(BaseModel):
     id: str
     chama_id: str
     borrower_user_id: str
+    borrower_full_name: str | None = None
     principal_amount: str
     interest_type: str
     interest_rate: str
     term_months: int
     status: str
+    total_payable: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 class LoanApprovalIn(BaseModel):

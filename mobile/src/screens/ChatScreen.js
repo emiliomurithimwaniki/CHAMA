@@ -15,6 +15,7 @@ export default function ChatScreen({ route }) {
   const [channelId, setChannelId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
+  const [wsReady, setWsReady] = useState(false);
   const wsRef = useRef(null);
   const listRef = useRef(null);
 
@@ -52,16 +53,29 @@ export default function ChatScreen({ route }) {
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
 
+        ws.onopen = () => {
+          setWsReady(true);
+        };
+
+        ws.onclose = () => {
+          setWsReady(false);
+        };
+
         ws.onmessage = (event) => {
           try {
             const msg = JSON.parse(event.data);
             if (msg.type === 'NEW_MESSAGE') {
               setMessages((prev) => [...prev, msg.message]);
             }
+            if (msg.type === 'ERROR') {
+              Toast.show({ type: 'error', text1: 'Chat', text2: msg.message || 'Chat error' });
+            }
           } catch (e) {}
         };
 
-        ws.onerror = () => {};
+        ws.onerror = () => {
+          setWsReady(false);
+        };
       } catch (e) {
         Toast.show({ type: 'error', text1: 'Error', text2: e.message });
       }
@@ -74,20 +88,36 @@ export default function ChatScreen({ route }) {
     };
   }, []);
 
-  const send = () => {
+  const send = async () => {
     if (!text.trim() || !channelId) return;
+    const body = text.trim();
+
+    const ws = wsRef.current;
+    const canWsSend = ws && ws.readyState === 1;
+
     try {
-      wsRef.current?.send(
-        JSON.stringify({
-          type: 'SEND_MESSAGE',
-          channelId,
-          body: text.trim(),
-          messageType: 'text',
-        })
-      );
+      if (canWsSend) {
+        ws.send(
+          JSON.stringify({
+            type: 'SEND_MESSAGE',
+            channelId,
+            body,
+            messageType: 'text',
+          })
+        );
+      } else {
+        await apiRequest({
+          baseUrl,
+          path: `/api/v1/chamas/${chama.id}/chat/channels/${channelId}/messages`,
+          method: 'POST',
+          token,
+          body: { body, message_type: 'text' },
+        });
+        await loadHistory(channelId);
+      }
       setText('');
     } catch (e) {
-      Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to send' });
+      Toast.show({ type: 'error', text1: 'Error', text2: e.message || 'Failed to send' });
     }
   };
 
@@ -156,7 +186,7 @@ export default function ChatScreen({ route }) {
             placeholder="Message"
             style={{ flex: 1 }}
           />
-          <IconButton icon={() => <Ionicons name="send" size={18} />} onPress={send} disabled={!text.trim()} />
+          <IconButton icon={() => <Ionicons name="send" size={18} />} onPress={send} disabled={!text.trim() || !channelId} />
         </View>
       </View>
     </SafeAreaView>
