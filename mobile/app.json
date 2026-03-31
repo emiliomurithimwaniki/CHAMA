@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "Chama",
+    "slug": "chama-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["android"],
+    "sdkVersion": "52.0.0",
+    "android": {
+      "package": "com.chama.app"
+    }
+  }
+}

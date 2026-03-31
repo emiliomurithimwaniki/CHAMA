@@ -1,0 +1,1 @@
+This file ensures the src/screens directory exists in some tooling.
